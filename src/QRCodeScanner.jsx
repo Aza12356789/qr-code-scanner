@@ -1,58 +1,50 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 import jsQR from 'jsqr';
 
-function QRCodeScanner() {
-  const [scannedResult, setScannedResult] = useState('No QR Code detected');
-  const [isScanning, setIsScanning] = useState(false);
+const QRCodeScanner = () => {
   const webcamRef = useRef(null);
+  const [qrCodeData, setQrCodeData] = useState("No QR Code detected");
 
-  const handleScan = useCallback(() => {
+  const videoConstraints = {
+    facingMode: "environment",  // Задает использование задней камеры
+  };
+
+  const captureAndScan = () => {
     const imageSrc = webcamRef.current.getScreenshot();
     if (imageSrc) {
-      const image = new Image();
-      image.src = imageSrc;
-      image.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      img.src = imageSrc;
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
         if (code) {
-          setScannedResult(code.data);
-          setIsScanning(false);
+          setQrCodeData(code.data);
         } else {
-          setScannedResult('No QR Code detected');
+          setQrCodeData("No QR Code detected");
         }
       };
     }
-  }, []);
+  };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px' }}>
+    <div style={{ textAlign: 'center' }}>
       <h1>QR Code Scanner</h1>
-      {isScanning ? (
-        <div>
-          <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/png"
-            style={{ width: '300px', height: '300px' }}
-          />
-          <button onClick={handleScan} style={{ marginTop: '20px', padding: '10px 20px', fontSize: '16px' }}>
-            Scan Now
-          </button>
-        </div>
-      ) : (
-        <button onClick={() => setIsScanning(true)} style={{ padding: '10px 20px', fontSize: '16px' }}>
-          Start Scanning
-        </button>
-      )}
-      <p style={{ marginTop: '20px', fontWeight: 'bold' }}>Scanned Result: {scannedResult}</p>
+      <Webcam
+        audio={false}
+        ref={webcamRef}
+        screenshotFormat="image/png"
+        videoConstraints={videoConstraints}
+      />
+      <p><strong>Scanned Result:</strong> {qrCodeData}</p>
+      <button onClick={captureAndScan}>Scan QR Code</button>
     </div>
   );
-}
+};
 
 export default QRCodeScanner;
